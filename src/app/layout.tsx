@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Silkscreen, Space_Grotesk } from "next/font/google";
 import SiteNav from "../components/SiteNav";
+import { AudioProvider } from "@/contexts/AudioContext";
 import "./globals.css";
 
 const silkscreen = Silkscreen({
@@ -30,8 +31,10 @@ export default function RootLayout({
         suppressHydrationWarning
         className={`${spaceGrotesk.variable} ${silkscreen.variable} min-h-full bg-[#0a0a0f] font-sans text-white`}
       >
-        <SiteNav />
-        {children}
+        <AudioProvider>
+          <SiteNav />
+          {children}
+        </AudioProvider>
       </body>
     </html>
   );

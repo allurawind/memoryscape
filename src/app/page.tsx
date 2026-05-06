@@ -5,12 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import SubjectReport from "@/components/SubjectReport";
 import { memoriesMap } from "@/data/memories";
-
-const tracks = [
-  { src: "/wiv - fly... - (320 Kbps).mp3", title: "fly..." },
-  { src: "/dont leave me.mp3", title: "dont leave me" },
-  { src: "/identity disturbance.mp3", title: "identity disturbance" },
-];
+import { useAudio, tracks } from "@/contexts/AudioContext";
 
 const buildings = [
   { id: "maths-teacher",     src: "/maths teacher-Photoroom.png",     alt: "Maths Teacher",     className: "left-[0%] top-[38.17%] w-[16.48%] z-20" },
@@ -25,55 +20,50 @@ const buildings = [
 
 export default function Home() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
   const sectionRef = useRef<HTMLElement | null>(null);
   const buildingRefs = useRef<(HTMLDivElement | null)[]>([]);
 
-  const [isPlaying, setIsPlaying] = useState(true);
-  const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
+  const { isPlaying, currentTrackIndex, togglePlayback: audioToggle, nextTrack, previousTrack, audioRef } = useAudio();
+
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [buildingRect, setBuildingRect] = useState<DOMRect | null>(null);
   const [transformOrigin, setTransformOrigin] = useState("50% 50%");
 
+  // Sync decorative video with global audio state
   useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    void audio.play();
+    const video = videoRef.current;
+    if (!video) return;
+    if (!isPlaying) {
+      video.pause();
+    }
+  // Only run once on mount to handle the blocked-autoplay case
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Restart video on track change; pause when audio is paused
   useEffect(() => {
-    const audio = audioRef.current;
     const video = videoRef.current;
-    if (!audio || !video || !isPlaying) return;
-    video.currentTime = 0;
-    void Promise.all([video.play(), audio.play()]);
+    if (!video) return;
+    if (isPlaying) {
+      video.currentTime = 0;
+      void video.play();
+    } else {
+      video.pause();
+    }
   }, [currentTrackIndex, isPlaying]);
 
+  // Page-level toggle: syncs the decorative video AND delegates audio to context
   const togglePlayback = async () => {
-    if (!videoRef.current || !audioRef.current) return;
     const video = videoRef.current;
     const audio = audioRef.current;
+    if (!video || !audio) return;
     if (isPlaying) {
       video.pause();
-      audio.pause();
-      setIsPlaying(false);
-      return;
+    } else {
+      video.currentTime = audio.currentTime;
+      void video.play();
     }
-    video.currentTime = audio.currentTime;
-    await Promise.all([video.play(), audio.play()]);
-    setIsPlaying(true);
-  };
-
-  const handleTrackEnd = () => {
-    setCurrentTrackIndex((prev) => (prev + 1) % tracks.length);
-  };
-
-  const previousTrack = () => {
-    setCurrentTrackIndex((prev) => (prev - 1 + tracks.length) % tracks.length);
-  };
-
-  const nextTrack = () => {
-    setCurrentTrackIndex((prev) => (prev + 1) % tracks.length);
+    await audioToggle();
   };
 
   const handleBuildingClick = (id: string, index: number) => {
@@ -117,7 +107,6 @@ export default function Home() {
             const isSelected = selectedId === building.id;
             const isDimmed = selectedId !== null && !isSelected;
 
-            // Float timing per building (kept here for the CSS animation)
             const floatDuration = 5 + (index % 3);
             const floatDelay = index * 0.18;
 
@@ -127,7 +116,6 @@ export default function Home() {
                 ref={(el) => { buildingRefs.current[index] = el; }}
                 className={`absolute ${building.className} cursor-pointer`}
                 style={isSelected ? { zIndex: 45 } : undefined}
-                // Entrance from below on first mount
                 initial={{ opacity: 0, y: 20 }}
                 animate={{
                   opacity: isDimmed ? 0.4 : 1,
@@ -153,10 +141,6 @@ export default function Home() {
                   }
                 }}
               >
-                {/*
-                  Inner div handles the CSS float animation independently of
-                  Framer Motion's scale/blur transforms on the outer div.
-                */}
                 <div
                   style={{
                     animation: `floatBuilding ${floatDuration}s ease-in-out ${floatDelay}s infinite`,
@@ -176,15 +160,8 @@ export default function Home() {
           })}
         </motion.section>
 
-        {/* ── Music player ───────────────────────────────────────────── */}
+        {/* ── Music player (home only) ────────────────────────────────── */}
         <aside className="absolute bottom-5 left-6 z-50 h-[100px] w-[221px] md:bottom-8 md:left-16">
-          <audio
-            ref={audioRef}
-            src={tracks[currentTrackIndex].src}
-            onEnded={handleTrackEnd}
-            preload="auto"
-            autoPlay
-          />
           <div className="h-[100px] w-[100px] border border-zinc-800 bg-transparent p-0">
             <video
               ref={videoRef}

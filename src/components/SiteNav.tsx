@@ -4,11 +4,12 @@ import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useAudio } from "@/contexts/AudioContext";
 
 const navLinks = [
   { label: "SHRAVANI'S_WORLD.EXE", href: "/", className: "left-6 top-6 md:left-16 md:top-8" },
-  { label: "ABOUT_", href: "/about", className: "right-[29%] top-6 md:top-8" },
-  { label: "DOC_", href: "/doc", className: "right-[18%] top-6 md:top-8" },
+  { label: "ABOUT_", href: "/about", className: "right-[calc(29%+30px)] top-6 md:top-8" },
+  { label: "DOC_", href: "/doc", className: "right-[calc(18%+30px)] top-6 md:top-8" },
 ];
 
 const CONTACT_LINKS = [
@@ -32,7 +33,72 @@ const CONTACT_LINKS = [
   },
 ];
 
-function TypewriterLine({ text, href }: { text: string; href: string }) {
+// Keyframe arrays for the portal flicker — defined outside the component for stability.
+const FLICKER_OPACITY_IN:  number[] = [0, 1, 0, 0.8, 0, 1, 0.3, 1];
+const FLICKER_SCALE_IN:    number[] = [0.7, 1.15, 1.0, 1.05, 0.95, 1.0];
+const FLICKER_OPACITY_OUT: number[] = [1, 0, 0.6, 0];
+const FLICKER_SCALE_OUT:   number[] = [1, 1.1, 0.8];
+
+// ── Mini Player (30 × 30 px) ────────────────────────────────────────────────
+function MiniPlayer({
+  isPlaying,
+  onToggle,
+}: {
+  isPlaying: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.7 }}
+      animate={{ opacity: FLICKER_OPACITY_IN, scale: FLICKER_SCALE_IN, transition: { duration: 0.38, ease: "linear" } }}
+      exit={{ opacity: FLICKER_OPACITY_OUT, scale: FLICKER_SCALE_OUT, transition: { duration: 0.2, ease: "linear" } }}
+      // Intercept clicks so we don't navigate via the parent <Link>
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        onToggle();
+      }}
+      className="group relative mr-2 size-[30px] flex-shrink-0 cursor-pointer border border-zinc-800"
+      aria-label={isPlaying ? "Pause" : "Play"}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          e.stopPropagation();
+          onToggle();
+        }
+      }}
+    >
+      {/* Decorative album-cover video */}
+      <video
+        src="/wiv album cover (trimmed).mp4"
+        autoPlay
+        loop
+        muted
+        playsInline
+        className="h-full w-full object-cover grayscale contrast-125 opacity-60 mix-blend-luminosity"
+      />
+
+      {/* Play / Pause icon overlay on hover */}
+      <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-[#0a0a0f]/70 opacity-0 transition-opacity duration-150 group-hover:opacity-100">
+        {isPlaying ? (
+          <svg width="8" height="8" viewBox="0 0 12 12" fill="white" aria-hidden="true">
+            <rect x="2" y="2" width="3" height="8" />
+            <rect x="7" y="2" width="3" height="8" />
+          </svg>
+        ) : (
+          <svg width="8" height="8" viewBox="0 0 12 12" fill="white" aria-hidden="true">
+            <polygon points="3,2 10,6 3,10" />
+          </svg>
+        )}
+      </div>
+    </motion.div>
+  );
+}
+
+// ── Typewriter contact link ─────────────────────────────────────────────────
+function TypewriterLine({ text, href, compact }: { text: string; href: string; compact?: boolean }) {
   return (
     <motion.a
       href={href}
@@ -41,10 +107,14 @@ function TypewriterLine({ text, href }: { text: string; href: string }) {
       variants={{
         hidden: {},
         visible: {
-          transition: { staggerChildren: 0.038 },
+          transition: { staggerChildren: compact ? 0.032 : 0.038 },
         },
       }}
-      className="block cursor-pointer font-[var(--font-space-grotesk)] text-[13px] leading-[24px] tracking-wider text-[#B6B6D9] transition-colors hover:text-white"
+      className={
+        compact
+          ? "block cursor-pointer font-[var(--font-space-grotesk)] text-[11px] leading-[17px] tracking-[0.06em] text-[#B6B6D9] transition-colors hover:text-white"
+          : "block cursor-pointer font-[var(--font-space-grotesk)] text-[13px] leading-[24px] tracking-wider text-[#B6B6D9] transition-colors hover:text-white"
+      }
     >
       {text.split("").map((char, i) => (
         <motion.span
@@ -61,15 +131,21 @@ function TypewriterLine({ text, href }: { text: string; href: string }) {
   );
 }
 
+// ── SiteNav ─────────────────────────────────────────────────────────────────
 export default function SiteNav() {
   const pathname = usePathname();
+  const { isPlaying, togglePlayback } = useAudio();
+
   const hoverResetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // linkRefs now points to the inner <a> elements (the Link components)
   const linkRefs = useRef<(HTMLAnchorElement | null)[]>([]);
   const contactWrapperRef = useRef<HTMLDivElement>(null);
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [isContactHovered, setIsContactHovered] = useState(false);
   const [isContactOpen, setIsContactOpen] = useState(false);
-  const [indicatorLeft, setIndicatorLeft] = useState(24);
+  const [indicatorRight, setIndicatorRight] = useState(24);
+
+  const isHome = pathname === "/";
 
   const activeIndex = useMemo(
     () =>
@@ -98,20 +174,22 @@ export default function SiteNav() {
     }, 80);
   };
 
+  // Align the indicator row's *right* edge with the active nav label's right edge
+  // (same horizontal finish line for tab title + "you're here" line).
   useEffect(() => {
     const updateIndicatorPosition = () => {
       if (activeIndex < 0) return;
       const activeLink = linkRefs.current[activeIndex];
-      const container = activeLink?.parentElement;
+      const container = activeLink?.closest("nav");
       if (!activeLink || !container) return;
       const linkRect = activeLink.getBoundingClientRect();
       const containerRect = container.getBoundingClientRect();
-      setIndicatorLeft(linkRect.left - containerRect.left);
+      setIndicatorRight(containerRect.right - linkRect.right);
     };
     updateIndicatorPosition();
     window.addEventListener("resize", updateIndicatorPosition);
     return () => window.removeEventListener("resize", updateIndicatorPosition);
-  }, [activeIndex]);
+  }, [activeIndex, pathname]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -141,7 +219,7 @@ export default function SiteNav() {
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.18, ease: "easeOut" }}
-        className="pointer-events-none absolute -inset-x-2 -inset-y-1 z-[-1]"
+        className="pointer-events-none absolute inset-y-[-4px] left-0 right-0 z-[-1] px-2"
       >
         <motion.svg className="absolute inset-0 h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="none">
           <motion.rect
@@ -177,7 +255,7 @@ export default function SiteNav() {
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.18, ease: "easeOut" }}
-        className="pointer-events-none absolute -inset-x-2 -inset-y-1 z-[-1]"
+        className="pointer-events-none absolute inset-y-[-4px] left-0 right-0 z-[-1] px-2"
       >
         <motion.svg className="absolute inset-0 h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="none">
           <motion.rect
@@ -208,33 +286,57 @@ export default function SiteNav() {
   return (
     <div className="pointer-events-none fixed inset-x-0 top-0 z-[60] bg-[#0a0a0f]/80 backdrop-blur-md">
       <nav className="relative mx-auto h-[96px] w-full max-w-[1440px]">
-        {navLinks.map((item, index) => (
-          <Link
-            key={item.label}
-            href={item.href}
-            ref={(element) => {
-              linkRefs.current[index] = element;
-            }}
-            onMouseEnter={() => handleNavHoverStart(index)}
-            onMouseLeave={handleNavHoverEnd}
-            className={`pointer-events-auto absolute ${item.className} isolate inline-flex items-center font-silkscreen text-[20px] font-normal leading-[26px] tracking-[0em] text-[#FFFFFF]`}
-          >
-            <span className="relative z-10">{item.label}</span>
-            <AnimatePresence>{renderHoverBackground(index)}</AnimatePresence>
-          </Link>
-        ))}
+        {navLinks.map((item, index) => {
+          const isActive = index === activeIndex;
+          // Show the mini player only on non-home pages next to the active link
+          const showMini = isActive && !isHome && index !== 0;
+
+          return (
+            /*
+             * Wrapper div takes the absolute position so the Link element's
+             * own getBoundingClientRect() stays unaffected by the mini player
+             * being a flex sibling.
+             */
+            <div
+              key={item.label}
+              className={`pointer-events-auto absolute ${item.className} inline-flex items-center`}
+            >
+              {/* Portal-flicker mini player — mounts/unmounts with route changes */}
+              <AnimatePresence>
+                {showMini && (
+                  <MiniPlayer
+                    key={`mini-player-${index}`}
+                    isPlaying={isPlaying}
+                    onToggle={togglePlayback}
+                  />
+                )}
+              </AnimatePresence>
+
+              <Link
+                href={item.href}
+                ref={(element) => { linkRefs.current[index] = element; }}
+                onMouseEnter={() => handleNavHoverStart(index)}
+                onMouseLeave={handleNavHoverEnd}
+                className="relative isolate inline-flex items-center font-silkscreen text-[20px] font-normal leading-[26px] tracking-[0em] text-[#FFFFFF]"
+              >
+                <span className="relative z-10">{item.label}</span>
+                <AnimatePresence>{renderHoverBackground(index)}</AnimatePresence>
+              </Link>
+            </div>
+          );
+        })}
 
         {/* Contact Me_ toggle */}
         <div
           ref={contactWrapperRef}
-          className="pointer-events-auto absolute right-6 top-6 md:right-16 md:top-8"
+          className="pointer-events-auto absolute right-6 top-6 w-max md:right-16 md:top-8"
         >
           <button
             type="button"
             onClick={() => setIsContactOpen((prev) => !prev)}
             onMouseEnter={() => { setHoveredIndex(null); setIsContactHovered(true); }}
             onMouseLeave={() => setIsContactHovered(false)}
-            className="isolate inline-flex items-center font-silkscreen text-[20px] font-normal leading-[26px] tracking-[0em] text-[#FFFFFF]"
+            className="relative isolate inline-flex items-center font-silkscreen text-[20px] font-normal leading-[26px] tracking-[0em] text-[#FFFFFF]"
           >
             <span className="relative z-10">CONTACT ME_</span>
             <AnimatePresence>{renderContactHoverBackground()}</AnimatePresence>
@@ -249,17 +351,17 @@ export default function SiteNav() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.22, ease: "easeOut" }}
-                className="absolute -left-2 top-[calc(100%+4px)] z-[100] w-[calc(100%+1rem)] border border-white/40 bg-[#0a0a0f]"
+                className="absolute left-0 right-0 top-[calc(100%+4px)] z-[100] w-full min-w-0 border border-white/40 bg-[#0a0a0f]"
               >
                 {/* Header bar */}
-                <div className="flex items-center justify-between border-b border-white/20 px-4 py-2">
-                  <span className="font-[var(--font-silkscreen)] text-[8px] tracking-[0.14em] text-[#5a5a7a]">
+                <div className="flex items-center justify-between gap-2 border-b border-white/20 px-2 py-1">
+                  <span className="font-[var(--font-silkscreen)] text-[7px] tracking-[0.12em] text-[#5a5a7a]">
                     // COMMS_TERMINAL v1.0
                   </span>
-                  <div className="flex gap-1.5">
-                    <span className="h-2 w-2 rounded-full bg-[#3a3a5a]" />
-                    <span className="h-2 w-2 rounded-full bg-[#3a3a5a]" />
-                    <span className="h-2 w-2 rounded-full bg-[#3a3a5a]" />
+                  <div className="flex shrink-0 gap-1">
+                    <span className="h-1.5 w-1.5 rounded-full bg-[#3a3a5a]" />
+                    <span className="h-1.5 w-1.5 rounded-full bg-[#3a3a5a]" />
+                    <span className="h-1.5 w-1.5 rounded-full bg-[#3a3a5a]" />
                   </div>
                 </div>
 
@@ -276,10 +378,10 @@ export default function SiteNav() {
                       },
                     },
                   }}
-                  className="space-y-3 px-4 py-4"
+                  className="space-y-2 px-2.5 py-2.5"
                 >
                   {CONTACT_LINKS.map((link) => (
-                    <TypewriterLine key={link.tag} text={link.full} href={link.href} />
+                    <TypewriterLine key={link.tag} text={link.full} href={link.href} compact />
                   ))}
 
                   {/* Blinking cursor */}
@@ -288,9 +390,9 @@ export default function SiteNav() {
                       hidden: { opacity: 0 },
                       visible: { opacity: 1, transition: { delay: 0.1, duration: 0 } },
                     }}
-                    className="pt-1"
+                    className="pt-0.5"
                   >
-                    <BlinkingCursor />
+                    <BlinkingCursor compact />
                   </motion.div>
                 </motion.div>
               </motion.div>
@@ -300,8 +402,8 @@ export default function SiteNav() {
 
         {activeIndex >= 0 ? (
           <motion.div
-            className="absolute top-[52px] flex items-center gap-[6px] font-[var(--font-space-grotesk)] text-[12px] font-normal leading-[15px] tracking-[0em] text-[#FFFFFF] md:top-[64px]"
-            animate={{ left: indicatorLeft }}
+            className="absolute left-auto top-[52px] flex items-center gap-[6px] font-[var(--font-space-grotesk)] text-[12px] font-normal leading-[15px] tracking-[0em] text-[#FFFFFF] md:top-[64px]"
+            animate={{ right: indicatorRight }}
             transition={{ duration: 0.2, ease: "easeOut" }}
           >
             <span className="font-[var(--font-space-grotesk)]">you&apos;re here</span>
@@ -318,12 +420,16 @@ export default function SiteNav() {
   );
 }
 
-function BlinkingCursor() {
+function BlinkingCursor({ compact }: { compact?: boolean }) {
   return (
     <motion.span
       animate={{ opacity: [1, 0, 1] }}
-      transition={{ duration: 0.9, repeat: Infinity, ease: "linear" }}
-      className="inline-block h-[14px] w-[9px] bg-[#B6B6D9] align-middle"
+      transition={{ duration: compact ? 0.85 : 0.9, repeat: Infinity, ease: "linear" }}
+      className={
+        compact
+          ? "inline-block h-[11px] w-[7px] bg-[#B6B6D9] align-middle"
+          : "inline-block h-[14px] w-[9px] bg-[#B6B6D9] align-middle"
+      }
     />
   );
 }
