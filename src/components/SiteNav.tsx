@@ -322,7 +322,7 @@ function BlinkingCursor() {
   return (
     <motion.span
       animate={{ opacity: [1, 0, 1] }}
-      transition={{ duration: 0.9, repeat: Infinity, ease: "steps(1)" }}
+      transition={{ duration: 0.9, repeat: Infinity, ease: "linear" }}
       className="inline-block h-[14px] w-[9px] bg-[#B6B6D9] align-middle"
     />
   );
