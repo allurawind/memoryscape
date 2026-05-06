@@ -22,7 +22,10 @@ export default function AboutPage() {
           </h2>
 
           <motion.p
-            {...fadeUp}
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
             className="absolute left-[208px] top-[113px] max-w-[840px] text-[24px] leading-[1.3] font-sans"
           >
             The project started as an assignment brief for our Human Science class.
@@ -69,7 +72,10 @@ export default function AboutPage() {
           </h2>
 
           <motion.p
-            {...fadeUp}
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
             className="absolute left-[117px] top-[902px] max-w-[1206px] text-[24px] leading-[1.3] font-sans"
           >
             The next part was in figuring out what style I wanted to implement for
@@ -78,7 +84,10 @@ export default function AboutPage() {
             friend&apos;s childhood memories and locations.
           </motion.p>
           <motion.p
-            {...fadeUp}
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
             transition={{ duration: 0.28, ease: "easeOut" as const, delay: 0.06 }}
             className="absolute left-[117px] top-[1025px] max-w-[1205px] text-[24px] leading-[1.3] font-sans"
           >
@@ -95,7 +104,10 @@ export default function AboutPage() {
             Aesthetic
           </h2>
           <motion.p
-            {...fadeUp}
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
             className="absolute left-[122px] top-[1391px] max-w-[1206px] text-[24px] leading-[1.3] font-sans"
           >
             Isometric, dark atmosphere, anime, moody/melancholic, and pixelated is
@@ -115,7 +127,10 @@ export default function AboutPage() {
             Audio
           </h2>
           <motion.p
-            {...fadeUp}
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
             className="absolute left-[122px] top-[1805px] max-w-[1208px] whitespace-pre-line text-[24px] leading-[1.3] font-sans"
           >
             {"The idea of having music playing in the background here came from the realization that I usually have music accompany me while I'm working on solo projects. I wanted the site visitor / viewer to experience\nwhat I felt while creating the website through music. It also helps create a mood in regards to the site viewing experience."}
