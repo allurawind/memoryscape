@@ -6,7 +6,7 @@ const fadeUp = {
   initial: { opacity: 0, y: 20 },
   whileInView: { opacity: 1, y: 0 } as Record<string, unknown>,
   viewport: { once: true },
-  transition: { duration: 0.28, ease: [0.22, 1, 0.36, 1] as any },
+  transition: { duration: 0.28, ease: "easeOut" },
 };
 
 export default function AboutPage() {
@@ -79,7 +79,7 @@ export default function AboutPage() {
           </motion.p>
           <motion.p
             {...fadeUp}
-            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1], delay: 0.06 }}
+            transition={{ duration: 0.28, ease: "easeOut", delay: 0.06 }}
             className="absolute left-[117px] top-[1025px] max-w-[1205px] text-[24px] leading-[1.3] font-sans"
           >
             The home is representative of a CPU (core of all operations) in that
