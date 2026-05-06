@@ -121,7 +121,9 @@ export default function Home() {
                   opacity: isDimmed ? 0.4 : 1,
                   y: 0,
                   scale: isSelected ? 1.18 : 1,
-                  filter: isDimmed ? "blur(2.5px)" : "none",
+                  // Explicit blur(0px) on the selected tile so it stays sharp; dimmed
+                  // tiles use blur. (Avoids backdrop / motion leaving a residual blur.)
+                  filter: isDimmed ? "blur(2.5px)" : "blur(0px)",
                 }}
                 transition={{
                   opacity: { duration: 0.5, delay: selectedId ? 0 : index * 0.08 },
