@@ -1,0 +1,43 @@
+house cpu-Photoroom.png : 
+Archive Entry: Early Morning Rhythms
+The records show a young girl who found the transition from sleep to the world difficult. Being the youngest, she lived under a protective but firm routine where a maid’s assistance was required just to get her through the morning shower and onto the school bus. It was a time of high dependency, where the walls of her home provided a safety that the outside world had not yet defined.
+
+school gemini-Photoroom.png :
+Archive Entry: Weight of the Institution
+Being placed in the Catholic school system proved to be a source of significant friction for her. The environment was rigid, and the young student felt the weight of expectations she wasn't yet equipped to meet. Her mother advocated fiercely for her, attempting to convince the principal that she simply needed time to find her footing, but the institution remained a place of early struggle.
+
+stray dogs-Photoroom.png :
+Archive Entry: Fear on the Perimeter
+While the neighborhood was familiar, it held specific terrors for a child. The local stray dogs represented an unpredictable threat that could freeze her in her tracks. These encounters were more than just small moments; they were early lessons in navigating a world that felt much larger and more dangerous than her own backyard.
+
+grocery store-Photoroom.png :
+Archive Entry: Solo Mission
+At age ten, she was granted a rare moment of independence: a walk to the local shop for milk. The mission was a mix of bravery and childhood impulse, as she secretly treated herself to chocolates along the way. However, the return trip became a trial of navigation when she took a different route and lost her bearings. Without a phone, she relied on the kindness of strangers to find her way home, choosing to keep the incident a secret to preserve her newfound freedom.
+
+dyslexia struggle-Photoroom.png :
+Archive Entry: The Scribbled Language
+The school years were defined by a "glitch" in her processing... a slight dyslexia that made the alphabet feel like an enemy. Her teachers, unable to see the potential beneath the surface, often treated her with a coldness that bordered on cruelty. To this day, her mother keeps a copy of a final paper filled with the scribbles of a girl trying desperately to communicate in a language that wouldn't sit still.
+
+maths teacher-Photoroom.png :
+Archive Entry: The Turning Point
+The intervention came from an unexpected source: her mathematics teacher. When she noticed the marks of a harsh lesson burned into the girl's hand, she didn't look away. Instead, she became a foundational pillar of support, encouraging the student to channel her confusion and pain into painting. It was this specific human connection that transformed a failing student into an artist, eventually leading her toward her current path in design.
+
+supportive friend-Photoroom.png :
+Archive Entry: Anchor in the Opposite Direction
+Even in the most isolating school days, there was a quiet alliance. A close friend lived in the exact opposite direction of the school, yet provided a sense of comfort that made the daily journey bearable. This friendship acted as a stabilizer, proving that even when life feels like it's pulling you toward a place you don't belong, there are people who keep you grounded.
+
+ecole building-Photoroom.png :
+Archive Entry: The Current Evolution
+The journey through those early glitches eventually led to the student finding her place at Ecole Intuit Lab. Now in her second year in Bengaluru, she is no longer the girl struggling to read subtitles.
+
+
+
+
+
+
+
+
+
+
+
+

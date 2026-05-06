@@ -1,120 +1,262 @@
 "use client";
 
 import Image from "next/image";
-import { motion } from "framer-motion";
-import { useRef, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useEffect, useRef, useState } from "react";
+import SubjectReport from "@/components/SubjectReport";
+import { memoriesMap } from "@/data/memories";
+
+const tracks = [
+  { src: "/wiv - fly... - (320 Kbps).mp3", title: "fly..." },
+  { src: "/dont leave me.mp3", title: "dont leave me" },
+  { src: "/identity disturbance.mp3", title: "identity disturbance" },
+];
 
 const buildings = [
-  { src: "/house cpu-Photoroom.png", alt: "House CPU", className: "left-[7%] top-[18%] w-48 z-40" },
-  { src: "/ecole building-Photoroom.png", alt: "Ecole Building", className: "left-[29%] top-[10%] w-44 z-30" },
-  { src: "/school gemini-Photoroom.png", alt: "School Gemini", className: "left-[49%] top-[21%] w-44 z-30" },
-  { src: "/maths teacher-Photoroom.png", alt: "Maths Teacher", className: "left-[70%] top-[12%] w-44 z-20" },
-  { src: "/grocery store-Photoroom.png", alt: "Grocery Store", className: "left-[19%] top-[51%] w-44 z-20" },
-  { src: "/stray dogs-Photoroom.png", alt: "Stray Dogs", className: "left-[43%] top-[45%] w-48 z-40" },
-  { src: "/supportive friend-Photoroom.png", alt: "Supportive Friend", className: "left-[64%] top-[50%] w-44 z-20" },
-  { src: "/dyslexia struggle-Photoroom.png", alt: "Dyslexia Struggle", className: "left-[35%] top-[68%] w-48 z-10" },
+  { id: "maths-teacher",     src: "/maths teacher-Photoroom.png",     alt: "Maths Teacher",     className: "left-[0%] top-[38.17%] w-[16.48%] z-20" },
+  { id: "dyslexia-struggle", src: "/dyslexia struggle-Photoroom.png", alt: "Dyslexia Struggle", className: "left-[22.25%] top-[50.76%] w-[16.48%] z-30" },
+  { id: "stray-dogs",        src: "/stray dogs-Photoroom.png",        alt: "Stray Dogs",        className: "left-[30.42%] top-[22.52%] w-[16.48%] z-40" },
+  { id: "house-cpu",         src: "/house cpu-Photoroom.png",         alt: "House CPU",         className: "left-[43.1%] top-[43.7%] w-[16.48%] z-40" },
+  { id: "school-gemini",     src: "/school gemini-Photoroom.png",     alt: "School Gemini",     className: "left-[57.46%] top-[21.37%] w-[21.97%] z-30" },
+  { id: "grocery-store",     src: "/grocery store-Photoroom.png",     alt: "Grocery Store",     className: "left-[34.08%] top-[0%] w-[16.62%] z-20" },
+  { id: "ecole-building",    src: "/ecole building-Photoroom.png",    alt: "Ecole Building",    className: "left-[55.35%] top-[69.47%] w-[16.48%] z-10" },
+  { id: "supportive-friend", src: "/supportive friend-Photoroom.png", alt: "Supportive Friend", className: "left-[83.52%] top-[52.29%] w-[16.48%] z-20" },
 ];
 
 export default function Home() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const sectionRef = useRef<HTMLElement | null>(null);
+  const buildingRefs = useRef<(HTMLDivElement | null)[]>([]);
+
   const [isPlaying, setIsPlaying] = useState(true);
+  const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [buildingRect, setBuildingRect] = useState<DOMRect | null>(null);
+  const [transformOrigin, setTransformOrigin] = useState("50% 50%");
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    void audio.play();
+  }, []);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    const video = videoRef.current;
+    if (!audio || !video || !isPlaying) return;
+    video.currentTime = 0;
+    void Promise.all([video.play(), audio.play()]);
+  }, [currentTrackIndex, isPlaying]);
 
   const togglePlayback = async () => {
-    if (!videoRef.current) return;
+    if (!videoRef.current || !audioRef.current) return;
+    const video = videoRef.current;
+    const audio = audioRef.current;
     if (isPlaying) {
-      videoRef.current.pause();
+      video.pause();
+      audio.pause();
       setIsPlaying(false);
       return;
     }
-    await videoRef.current.play();
+    video.currentTime = audio.currentTime;
+    await Promise.all([video.play(), audio.play()]);
     setIsPlaying(true);
   };
 
+  const handleTrackEnd = () => {
+    setCurrentTrackIndex((prev) => (prev + 1) % tracks.length);
+  };
+
+  const previousTrack = () => {
+    setCurrentTrackIndex((prev) => (prev - 1 + tracks.length) % tracks.length);
+  };
+
+  const nextTrack = () => {
+    setCurrentTrackIndex((prev) => (prev + 1) % tracks.length);
+  };
+
+  const handleBuildingClick = (id: string, index: number) => {
+    const el = buildingRefs.current[index];
+    const section = sectionRef.current;
+    if (!el || !section) return;
+
+    const bRect = el.getBoundingClientRect();
+    const sRect = section.getBoundingClientRect();
+    const originX = ((bRect.left + bRect.width / 2 - sRect.left) / sRect.width) * 100;
+    const originY = ((bRect.top + bRect.height / 2 - sRect.top) / sRect.height) * 100;
+
+    setTransformOrigin(`${originX}% ${originY}%`);
+    setBuildingRect(bRect);
+    setSelectedId(id);
+  };
+
+  const handleClose = () => {
+    setSelectedId(null);
+    setBuildingRect(null);
+  };
+
+  const selectedMemory = selectedId ? memoriesMap[selectedId] : null;
+
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#0a0a0f] text-white">
-      <nav className="absolute inset-x-0 top-0 z-50 flex items-start justify-between p-8">
-        <div className="space-y-2">
-          <p className="text-sm tracking-[0.24em] text-zinc-100">SHRAVANI&apos;S_WORLD.EXE</p>
-          <div className="flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-zinc-400">
-            <span>you&apos;re here</span>
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-              <rect x="1" y="1" width="12" height="12" stroke="currentColor" />
-              <rect x="4" y="5" width="1" height="1" fill="currentColor" />
-              <rect x="9" y="5" width="1" height="1" fill="currentColor" />
-              <rect x="4" y="9" width="6" height="1" fill="currentColor" />
-            </svg>
-          </div>
-        </div>
-        <div className="flex items-center gap-7 text-xs tracking-[0.22em] text-zinc-300">
-          <a href="#" className="transition-colors hover:text-white">ABOUT_</a>
-          <a href="#" className="transition-colors hover:text-white">DOC_</a>
-          <a href="#" className="transition-colors hover:text-white">CONTACT ME_</a>
-        </div>
-      </nav>
+    <main className="relative h-screen overflow-hidden bg-[#0a0a0f] text-white">
+      <div className="relative mx-auto h-full w-full max-w-[1440px]">
 
-      <section className="mx-auto flex min-h-screen w-full max-w-[1200px] items-center justify-center px-8 py-24">
-        <div className="relative h-[70vh] w-full">
-          {buildings.map((building, index) => (
-            <motion.div
-              key={building.src}
-              className={`absolute ${building.className}`}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: [0, -7, 0] }}
-              transition={{
-                opacity: { duration: 0.5, delay: index * 0.08 },
-                y: { duration: 5 + (index % 3), repeat: Number.POSITIVE_INFINITY, ease: "easeInOut", delay: index * 0.18 },
-              }}
-              whileHover={{ scale: 1.08 }}
-            >
-              <Image
-                src={building.src}
-                alt={building.alt}
-                width={400}
-                height={400}
-                className="h-auto w-full select-none object-contain drop-shadow-[0_0_28px_rgba(120,120,255,0.16)]"
-                priority={index < 4}
-              />
-            </motion.div>
-          ))}
-        </div>
-      </section>
+        {/* ── Map section ────────────────────────────────────────────── */}
+        <motion.section
+          ref={sectionRef}
+          className="absolute left-1/2 top-[52%] h-[52vh] max-h-[524px] min-h-[340px] w-[70vw] max-w-[710px] min-w-[320px] -translate-x-1/2 -translate-y-1/2"
+          animate={
+            selectedId
+              ? { scale: 1.05, transformOrigin }
+              : { scale: 1, transformOrigin: "50% 50%" }
+          }
+          transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
+        >
+          {buildings.map((building, index) => {
+            const isSelected = selectedId === building.id;
+            const isDimmed = selectedId !== null && !isSelected;
 
-      <aside className="absolute bottom-6 left-6 z-50">
-        <div className="border border-zinc-800 p-2 w-24 h-24 bg-transparent">
-          <video
-            ref={videoRef}
-            src="/wiv album cover (trimmed).mp4"
+            // Float timing per building (kept here for the CSS animation)
+            const floatDuration = 5 + (index % 3);
+            const floatDelay = index * 0.18;
+
+            return (
+              <motion.div
+                key={building.src}
+                ref={(el) => { buildingRefs.current[index] = el; }}
+                className={`absolute ${building.className} cursor-pointer`}
+                style={isSelected ? { zIndex: 45 } : undefined}
+                // Entrance from below on first mount
+                initial={{ opacity: 0, y: 20 }}
+                animate={{
+                  opacity: isDimmed ? 0.4 : 1,
+                  y: 0,
+                  scale: isSelected ? 1.18 : 1,
+                  filter: isDimmed ? "blur(2.5px)" : "none",
+                }}
+                transition={{
+                  opacity: { duration: 0.5, delay: selectedId ? 0 : index * 0.08 },
+                  y: { duration: 0.5, delay: index * 0.08 },
+                  scale: { duration: 0.35, type: "spring", stiffness: 180, damping: 22 },
+                  filter: { duration: 0.4 },
+                }}
+                whileHover={!selectedId ? { scale: 1.08 } : undefined}
+                onClick={() => handleBuildingClick(building.id, index)}
+                aria-label={`View report: ${building.alt}`}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    handleBuildingClick(building.id, index);
+                  }
+                }}
+              >
+                {/*
+                  Inner div handles the CSS float animation independently of
+                  Framer Motion's scale/blur transforms on the outer div.
+                */}
+                <div
+                  style={{
+                    animation: `floatBuilding ${floatDuration}s ease-in-out ${floatDelay}s infinite`,
+                  }}
+                >
+                  <Image
+                    src={building.src}
+                    alt={building.alt}
+                    width={200}
+                    height={200}
+                    className="h-auto w-full select-none object-cover drop-shadow-[0_4px_4px_rgba(0,0,0,0.25)]"
+                    priority={index < 4}
+                  />
+                </div>
+              </motion.div>
+            );
+          })}
+        </motion.section>
+
+        {/* ── Music player ───────────────────────────────────────────── */}
+        <aside className="absolute bottom-5 left-6 z-50 h-[100px] w-[221px] md:bottom-8 md:left-16">
+          <audio
+            ref={audioRef}
+            src={tracks[currentTrackIndex].src}
+            onEnded={handleTrackEnd}
+            preload="auto"
             autoPlay
-            loop
-            muted
-            playsInline
-            className="grayscale contrast-125 opacity-60 mix-blend-luminosity w-full h-full object-cover"
           />
-        </div>
-        <div className="mt-2 flex items-center justify-between">
-          <button
-            type="button"
-            onClick={togglePlayback}
-            aria-label={isPlaying ? "Pause video" : "Play video"}
-            className="border border-zinc-800 p-1 text-zinc-300 hover:text-white"
-          >
-            {isPlaying ? (
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor" aria-hidden="true">
-                <rect x="2" y="2" width="3" height="8" />
-                <rect x="7" y="2" width="3" height="8" />
-              </svg>
-            ) : (
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor" aria-hidden="true">
-                <polygon points="3,2 10,6 3,10" />
-              </svg>
-            )}
-          </button>
-          <div className="text-[10px] uppercase tracking-[0.22em] text-zinc-400">
-            <span>fly...</span>
-            <span className="ml-2 text-zinc-200">wiv</span>
+          <div className="h-[100px] w-[100px] border border-zinc-800 bg-transparent p-0">
+            <video
+              ref={videoRef}
+              src="/wiv album cover (trimmed).mp4"
+              autoPlay
+              loop
+              muted
+              playsInline
+              className="grayscale contrast-125 opacity-60 mix-blend-luminosity h-full w-full object-cover"
+            />
           </div>
-        </div>
-      </aside>
+          <div className="absolute left-[121px] top-[15px] max-w-[100px] whitespace-nowrap font-[var(--font-space-grotesk)] text-[16px] font-normal leading-[20px] text-[#FFFFFF]">
+            {tracks[currentTrackIndex].title}
+          </div>
+          <div className="absolute left-[121px] top-[35px] z-10 font-[var(--font-space-grotesk)] text-[12px] font-normal leading-[15px] text-[#757575]">
+            wiv
+          </div>
+          <div className="absolute left-[121px] top-[68px] flex items-center gap-2">
+            <button
+              type="button"
+              onClick={previousTrack}
+              aria-label="Previous track"
+              className="flex h-6 w-6 items-center justify-center border border-zinc-800 text-zinc-300 hover:text-white"
+            >
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor" aria-hidden="true">
+                <rect x="1" y="2" width="2" height="8" />
+                <polygon points="10,2 3,6 10,10" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              onClick={togglePlayback}
+              aria-label={isPlaying ? "Pause media" : "Play media"}
+              className="flex h-6 w-6 items-center justify-center border border-zinc-800 text-zinc-300 hover:text-white"
+            >
+              {isPlaying ? (
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor" aria-hidden="true">
+                  <rect x="2" y="2" width="3" height="8" />
+                  <rect x="7" y="2" width="3" height="8" />
+                </svg>
+              ) : (
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor" aria-hidden="true">
+                  <polygon points="3,2 10,6 3,10" />
+                </svg>
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={nextTrack}
+              aria-label="Next track"
+              className="flex h-6 w-6 items-center justify-center border border-zinc-800 text-zinc-300 hover:text-white"
+            >
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor" aria-hidden="true">
+                <polygon points="2,2 9,6 2,10" />
+                <rect x="9" y="2" width="2" height="8" />
+              </svg>
+            </button>
+          </div>
+        </aside>
+      </div>
+
+      {/* ── Subject Report overlay ──────────────────────────────────── */}
+      <AnimatePresence>
+        {selectedMemory && buildingRect && (
+          <SubjectReport
+            key={selectedId}
+            memory={selectedMemory}
+            buildingRect={buildingRect}
+            onClose={handleClose}
+          />
+        )}
+      </AnimatePresence>
     </main>
   );
 }
